@@ -4,7 +4,6 @@ from io import StringIO
 from enum import Enum
 from typing import Optional, Callable, Union, List, Tuple, Dict, Any
 from types import FunctionType
-import logging
 
 
 class AnnotationType(Enum):
