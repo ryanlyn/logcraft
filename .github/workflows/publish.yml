@@ -1,0 +1,70 @@
+name: Deploy Package
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  test-and-lint:
+    name: Test and Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: OS info
+        shell: bash
+        run: |
+          cat /etc/lsb-release
+
+      - name: Install Python 3.x
+        uses: actions/setup-python@v1
+        with:
+          python-version: "3.x"
+          architecture: "x64"
+
+      - name: Python info
+        shell: bash
+        run: |
+          echo $(python --version) at $(which python)
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          pip install -U pip
+          pip install -r ./requirements-dev.txt
+
+      - name: Run tests
+        shell: bash
+        run: |
+          nox --session test
+
+      - name: Run linting
+        shell: bash
+        run: |
+          nox --session lint
+  
+  deploy:
+    name: Deploy
+    needs: test-and-lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+  
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine
+  
+      - name: Build and publish
+        shell: bash
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          python setup.py sdist bdist_wheel
+          twine upload dist/*

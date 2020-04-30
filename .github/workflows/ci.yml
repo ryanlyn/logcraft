@@ -1,0 +1,53 @@
+name: Continuous Integration On All Branches
+
+on:
+  push:
+    branches:
+      - "*"
+      - "*/*"
+  pull_request:
+    branches:
+      - "*"
+      - "*/*"
+
+jobs:
+  diff:
+    name: Test and Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: OS info
+        shell: bash
+        run: |
+          cat /etc/lsb-release
+
+      - name: Install Python 3.x
+        uses: actions/setup-python@v1
+        with:
+          python-version: "3.x"
+          architecture: "x64"
+
+      - name: Python info
+        shell: bash
+        run: |
+          echo $(python --version) at $(which python)
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          pip install -U pip
+          pip install -r ./requirements-dev.txt
+
+      - name: Run tests
+        shell: bash
+        run: |
+          nox --session test
+
+      - name: Run linting
+        shell: bash
+        run: |
+          nox --session lint
+    
