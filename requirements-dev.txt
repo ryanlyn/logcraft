@@ -1,0 +1,9 @@
+-e .
+
+# testing
+pytest
+pytest-cov
+
+# linting
+flake8
+mypy
