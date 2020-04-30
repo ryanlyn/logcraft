@@ -6,7 +6,7 @@ PYTHON_VERSIONS = ["3.5", "3.6", "3.7", "3.8"]
 
 def install_package(session):
     session.install("--upgrade", "pip", "setuptools")
-    session.install("-e", ".")
+    session.install("-r", "requirements-dev.txt")
     return None
 
 
@@ -14,12 +14,10 @@ def install_package(session):
 def test(session):
     install_package(session)
 
-    session.install("pytest")
     session.run(
         "pytest",
         "--cov=logcraft/",
-        "--verbose",
-        "--cov-report term"
+        "--verbose"
     )
     return None
 
@@ -28,7 +26,6 @@ def test(session):
 def lint(session):
     install_package(session)
 
-    session.install("flake8")
     session.run(
         "flake8",
         "--ignore=E501,E702",
@@ -46,7 +43,6 @@ def lint(session):
 def type_lint(session):
     install_package(session)
 
-    session.install("mypy")
     session.run(
         "mypy",
         "logcraft/",

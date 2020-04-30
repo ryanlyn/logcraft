@@ -2,10 +2,12 @@ import tokenize
 import inspect
 from io import StringIO
 from enum import Enum
-from typing import Optional, Callable
+from typing import Optional, Callable, Union, List, Tuple, Dict, Any
+from types import FunctionType
+import logging
 
 
-class CallType(Enum):
+class AnnotationType(Enum):
     CALLABLE = 1
     CRITICAL = 2
     DEBUG = 3
@@ -16,13 +18,14 @@ class CallType(Enum):
     NONE = 8
 
 
-CALL_SIGNATURES = {
-    "#:": CallType.CALLABLE,
-    "#c:": CallType.CRITICAL,
-    "#d:": CallType.DEBUG,
-    "#e:": CallType.ERROR,
-    "#f:": CallType.FATAL,
-    "#i:": CallType.INFO
+ANNOTATION_SIGNATURES = {
+    "#:": AnnotationType.CALLABLE,
+    "#c:": AnnotationType.CRITICAL,
+    "#d:": AnnotationType.DEBUG,
+    "#e:": AnnotationType.ERROR,
+    "#f:": AnnotationType.FATAL,
+    "#i:": AnnotationType.INFO,
+    "#w:": AnnotationType.WARNING
 }
 
 
@@ -30,30 +33,31 @@ class DecoratorOrderException(Exception):
     pass
 
 
-def log(obj: Optional[object] = None,
+def log(obj: Optional[Union[type, FunctionType]] = None,
         *,
-        logger: Optional[object] = None,
+        logger_name: Optional[str] = None,
         custom_callable: Optional[Callable] = None,
         debug: bool = False) -> object:
 
-    factory = LogFactory(
-        logger=logger, custom_callable=custom_callable, debug=debug)
+    factory = DecoratorFactory(
+        logger_name=logger_name, custom_callable=custom_callable, debug=debug
+    )
     if obj is None:
         return factory
     else:
         return factory(obj)
 
 
-class LogFactory:
+class DecoratorFactory:
     def __init__(self,
-                 logger: Optional[object] = None,
+                 logger_name: Optional[str] = None,
                  custom_callable: Optional[Callable] = None,
                  debug: bool = False):
-        self.logger_name = logger.__name__ if logger else "logging"
+        self.logger_name = logger_name if logger_name else "logging"
         self.callable_name = custom_callable.__name__ if custom_callable else "print"
         self.debug = debug
 
-    def __call__(self, obj: object) -> object:
+    def __call__(self, obj: Union[type, FunctionType]) -> Union[type, FunctionType]:
         obj_src = inspect.getsource(obj)
         if self.debug:
             print("Original source:")
@@ -65,7 +69,7 @@ class LogFactory:
             if not ((len(first_decorator) == 4) and (first_decorator == "@log")):
                 raise DecoratorOrderException()
 
-        updated_src = update_object_src(
+        updated_src = _update_object_src(
             obj_src=obj_src,
             logger_name=self.logger_name,
             callable_name=self.callable_name
@@ -75,43 +79,43 @@ class LogFactory:
             print("Updated source:")
             print(updated_src)
 
-        updated_obj = exec_object(object_src=updated_src)
+        updated_obj = _exec_object(object_src=updated_src)
         return updated_obj
 
 
-def get_call_type(token_value: str) -> CallType:
+def _get_annotation_type(token_value: str) -> AnnotationType:
     token_value = token_value.lstrip()
 
-    max_signature_length = len(max(CALL_SIGNATURES.keys()))
+    max_signature_length = len(max(ANNOTATION_SIGNATURES.keys()))
     token_start = token_value[0:max_signature_length].rstrip()
 
     try:
-        return CALL_SIGNATURES[token_start]
+        return ANNOTATION_SIGNATURES[token_start]
     except KeyError:
-        return CallType.NONE
+        return AnnotationType.NONE
 
 
-def update_object_src(obj_src: str,
-                      logger_name: str = "logging",
-                      callable_name: str = "print") -> str:
-    new_tokens = []
-    comment_stack = []
+def _update_object_src(obj_src: str,
+                       logger_name: str = "logging",
+                       callable_name: str = "print") -> str:
+    new_tokens: List[tuple] = []
+    comment_stack: List[str] = []
 
-    previous_begin = None
-    previous_call_type = CallType.NONE
+    previous_begin = (0, 0)
+    previous_call_type = AnnotationType.NONE
     for token_spec in tokenize.generate_tokens(StringIO(obj_src).readline):
         token_type, token_string, begin, end, line = token_spec
 
-        call_type = get_call_type(token_value=token_string)
+        call_type = _get_annotation_type(token_value=token_string)
         is_continuation = call_type == previous_call_type
-        is_call = call_type != CallType.NONE
+        is_call = call_type != AnnotationType.NONE
         is_newline = token_type == tokenize.NL
 
-        if (not is_continuation) and (previous_call_type != CallType.NONE):
+        if (not is_continuation) and (previous_call_type != AnnotationType.NONE):
             if is_newline:
                 continue
 
-            call_tokens = create_call_tokens(
+            call_tokens = _create_call_tokens(
                 comments=comment_stack,
                 method=previous_call_type,
                 logger_name=logger_name,
@@ -134,40 +138,40 @@ def update_object_src(obj_src: str,
         previous_begin = begin
         previous_call_type = call_type
 
-    new_tokens = remove_indent(tokens=new_tokens)
-    updated_src = tokenize.untokenize(new_tokens)
+    new_tokens = _remove_indent(tokens=new_tokens)
+    updated_src: str = tokenize.untokenize(new_tokens)
     return updated_src
 
 
-def clean_comment(comment: str) -> str:
-    for signature in CALL_SIGNATURES.keys():
+def _clean_comment(comment: str) -> str:
+    for signature in ANNOTATION_SIGNATURES.keys():
         comment = comment.replace(signature, "").strip()
     return comment
 
 
-def create_call_tokens(comments: list,
-                       method: CallType,
-                       begin: tuple,
-                       logger_name: str = "logging",
-                       callable_name: str = "print") -> list:
-    if method == CallType.NONE:
+def _create_call_tokens(comments: List[str],
+                        method: AnnotationType,
+                        begin: Tuple[int, int],
+                        logger_name: str = "logging",
+                        callable_name: str = "print") -> list:
+    if method == AnnotationType.NONE:
         return []
 
-    comments = " ".join(map(lambda s: clean_comment(s), comments))
+    comment_string = " ".join(map(lambda s: _clean_comment(s), comments))
 
-    if ("{" in comments) and ("}" in comments):
-        call_var = f"""{'f"' + comments + '"'}"""
+    if ("{" in comment_string) and ("}" in comment_string):
+        call_var = f"""{'f"' + comment_string + '"'}"""
     else:
-        call_var = '"' + comments + '"'
+        call_var = '"' + comment_string + '"'
 
     call_strings = {
-        CallType.CALLABLE: f"{callable_name}({call_var})",
-        CallType.CRITICAL: f"{logger_name}.critical({call_var})",
-        CallType.DEBUG: f"{logger_name}.debug({call_var})",
-        CallType.ERROR: f"{logger_name}.error({call_var})",
-        CallType.FATAL: f"{logger_name}.fatal({call_var})",
-        CallType.INFO: f"{logger_name}.info({call_var})",
-        CallType.WARNING: f"{logger_name}.warn({call_var})"
+        AnnotationType.CALLABLE: f"{callable_name}({call_var})",
+        AnnotationType.CRITICAL: f"{logger_name}.critical({call_var})",
+        AnnotationType.DEBUG: f"{logger_name}.debug({call_var})",
+        AnnotationType.ERROR: f"{logger_name}.error({call_var})",
+        AnnotationType.FATAL: f"{logger_name}.fatal({call_var})",
+        AnnotationType.INFO: f"{logger_name}.info({call_var})",
+        AnnotationType.WARNING: f"{logger_name}.warn({call_var})"
     }
 
     call_string = call_strings[method] + "\n"
@@ -189,7 +193,7 @@ def create_call_tokens(comments: list,
     return updated_tokens
 
 
-def remove_indent(tokens: list) -> list:
+def _remove_indent(tokens: list) -> list:
     first_token_type, *_, first_token_end, _ = tokens[0]
     if first_token_type == tokenize.INDENT:
         indent_position = first_token_end[1]
@@ -221,12 +225,13 @@ def remove_indent(tokens: list) -> list:
         return tokens
 
 
-def exec_object(object_src: str) -> object:
-    _namespace = {}
+def _exec_object(object_src: str) -> Union[type, FunctionType]:
+    _namespace: Dict[str, Any] = {}
     exec(object_src, _namespace)
     (obj_name,) = (_namespace.keys() - set(["__builtins__"]))
 
     code = compile(object_src, "<string>", "exec")
     g = globals().copy()
     exec(code, g)
-    return g[obj_name]
+    _object: Union[type, FunctionType] = g[obj_name]
+    return _object

@@ -1,5 +1,8 @@
 -e .
 
+# env creation
+nox
+
 # testing
 pytest
 pytest-cov
