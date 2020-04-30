@@ -27,6 +27,7 @@ def do_something(x):
 <td>
 
 ```python
+
 def do_something(x):
     logging.info(f"started doing something with {x}")
     x = do_something_interesting(x)
@@ -47,7 +48,7 @@ Moreover, `logcraft` has the following benefits:
 - Allows continuation over multiple comments
 - Allows string formatting with evaluated variables
 
-Inspired by: [node-comment-macros](https://github.com/tj/node-comment-macros)
+Inspired by: [node-comment-macros](https://github.com/tj/node-comment-macros) and conversations with [@kale](https://github.com/kmiller96) and [@jiaxi](https://github.com/jiaxililearn).
 
 ### Why `logcraft`?
 A lot of logging in Python these days are simply descriptive in nature (e.g. "procedure `x` started" or "`x` iteration has `y` variable"). These logging calls usually adds no functionality to the program logic and clouds the programmer's interpretation of the source code.
@@ -130,10 +131,12 @@ The following are the available list of annotations:
 
 ## Other Installation Methods
 ### Source
+Clone the repository:
 ```bash
-git clone <>
+git clone https://github.com/ryanlyn/logcraft
 ```
 
+Run installation:
 ```bash
 cd logcraft
 python setup.py install
