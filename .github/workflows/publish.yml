@@ -1,12 +1,12 @@
-name: Deploy Package
+name: Publish Python Package
 
 on:
   release:
     types: [created]
 
 jobs:
-  test-and-lint:
-    name: Test and Lint
+  publish:
+    name: Publish
     runs-on: ubuntu-latest
 
     steps:
@@ -44,20 +44,10 @@ jobs:
         shell: bash
         run: |
           nox --session lint
-  
-  deploy:
-    name: Deploy
-    needs: test-and-lint
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-  
-      - name: Install dependencies
+      
+      - name: Install publish dependencies
         shell: bash
         run: |
-          python -m pip install --upgrade pip
           pip install setuptools wheel twine
   
       - name: Build and publish
