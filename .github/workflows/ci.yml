@@ -1,4 +1,4 @@
-name: Continuous Integration On All Branches
+name: Continuous Integration
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
       - "*/*"
 
 jobs:
-  diff:
+  test_and_lint:
     name: Test and Lint
     runs-on: ubuntu-latest
 
