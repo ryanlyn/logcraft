@@ -62,12 +62,6 @@ class DecoratorFactory:
             print("Original source:")
             print(obj_src)
 
-        first_decorator, obj_src = obj_src.split("\n", 1)
-        first_decorator = first_decorator.strip()[:5]
-        if first_decorator != "@log(":
-            if not ((len(first_decorator) == 4) and (first_decorator == "@log")):
-                raise DecoratorOrderException()
-
         updated_src = _update_object_src(
             obj_src=obj_src,
             logger_name=self.logger_name,
@@ -94,9 +88,21 @@ def _get_annotation_type(token_value: str) -> AnnotationType:
         return AnnotationType.NONE
 
 
+def _remove_decorator(obj_src: str) -> str:
+    first_decorator, obj_src = obj_src.strip("\n ").split("\n", 1)
+    first_decorator = first_decorator.strip()[:5]
+    if first_decorator != "@log(":
+        if not ((len(first_decorator) == 4) and (first_decorator == "@log")):
+            raise DecoratorOrderException() 
+    
+    return obj_src
+
+
 def _update_object_src(obj_src: str,
                        logger_name: str = "logging",
                        callable_name: str = "print") -> str:
+    obj_src = _remove_decorator(obj_src=obj_src)
+            
     new_tokens: List[tuple] = []
     comment_stack: List[str] = []
 
