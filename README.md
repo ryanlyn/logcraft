@@ -1,5 +1,6 @@
 # `logcraft`
 Python Macro-Generated Logging from Comments
+![Continuous Integration](https://github.com/ryanlyn/logcraft/workflows/Continuous%20Integration/badge.svg?branch=master)
 
 ## Introduction
 ### What is `logcraft`?
@@ -19,7 +20,7 @@ Source code files are not modified. Instead the `@log` macro is only applied at 
 def do_something(x):
     #i: started doing something with {x}
     x = do_something_interesting(x)
-    #i finished doing something
+    #i: finished doing something
     return x
 ```
 
