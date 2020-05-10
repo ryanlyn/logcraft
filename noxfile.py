@@ -30,7 +30,6 @@ def lint(session):
         "flake8",
         "--ignore=E501,E702",
         "--max-line-length=119",
-        "--format=google",
         "--count",
         "statistics",
         "--show-source",

@@ -93,8 +93,8 @@ def _remove_decorator(obj_src: str) -> str:
     first_decorator = first_decorator.strip()[:5]
     if first_decorator != "@log(":
         if not ((len(first_decorator) == 4) and (first_decorator == "@log")):
-            raise DecoratorOrderException() 
-    
+            raise DecoratorOrderException()
+
     return obj_src
 
 
@@ -102,7 +102,7 @@ def _update_object_src(obj_src: str,
                        logger_name: str = "logging",
                        callable_name: str = "print") -> str:
     obj_src = _remove_decorator(obj_src=obj_src)
-            
+
     new_tokens: List[tuple] = []
     comment_stack: List[str] = []
 
