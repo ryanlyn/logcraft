@@ -1,7 +1,10 @@
 # `logcraft`
-Python Macro-Generated Logging from Comments
-
 ![Continuous Integration](https://github.com/ryanlyn/logcraft/workflows/Continuous%20Integration/badge.svg?branch=master)
+![](https://img.shields.io/pypi/v/logcraft?color=blue)
+![](https://img.shields.io/pypi/pyversions/logcraft)
+![](https://img.shields.io/github/license/ryanlyn/logcraft)
+
+Python Macro-Generated Logging from Comments
 
 ## Introduction
 ### What is `logcraft`?
