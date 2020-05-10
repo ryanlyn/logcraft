@@ -1,5 +1,6 @@
 # `logcraft`
 Python Macro-Generated Logging from Comments
+
 ![Continuous Integration](https://github.com/ryanlyn/logcraft/workflows/Continuous%20Integration/badge.svg?branch=master)
 
 ## Introduction
